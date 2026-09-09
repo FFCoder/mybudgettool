@@ -1,0 +1,48 @@
+# Can run standalone against an external DB, or alongside compose.yaml locally.
+x-database: &database
+  DATABASE_URL: ${CONTAINER_DATABASE_URL:-postgres://budget:budget_local_only@db:5432/budget}
+services:
+  migrate:
+    build:
+      context: .
+      target: ops
+    environment: *database
+    restart: "no"
+  web:
+    build:
+      context: .
+      target: web
+    environment:
+      <<: *database
+      API_TOKEN: ${API_TOKEN:?Set API_TOKEN in .env or environment}
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3002}:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    init: true
+  cli:
+    build:
+      context: .
+      target: cli
+    profiles: [tools]
+    environment:
+      BUDGET_API_URL: ${CONTAINER_API_URL:-http://web:3000}
+      BUDGET_API_TOKEN: ${API_TOKEN:?Set API_TOKEN in .env or environment}
+      # Explicit opt-in only on the private Docker bridge; remote use requires HTTPS.
+      BUDGET_ALLOW_HTTP: "1"
+  ops:
+    build:
+      context: .
+      target: ops
+    profiles: [tools]
+    environment:
+      <<: *database
+      API_TOKEN: ${API_TOKEN:?Set API_TOKEN in .env or environment}
+    volumes:
+      - ${BACKUP_DIR:-./backups}:/backups
+    command: [scripts/container-upgrade.ts]

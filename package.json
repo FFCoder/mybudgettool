@@ -1,0 +1,24 @@
+{
+  "name": "my-budget-app",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^7"
+  },
+  "scripts": {
+    "dev": "bun --hot index.ts",
+    "start": "bun index.ts",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "db:migrate": "bun scripts/migrate.ts",
+    "cli": "bun src/cli/index.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "setup": "bun scripts/install.ts",
+    "upgrade": "bun scripts/upgrade.ts"
+  }
+}
